@@ -1,758 +1,247 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>SmartBus Route</title>
+    <title>SmartBus Route - Maps & Navigation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <style>
-        /* ============================================================================
-           SmartBus Route - All-in-One CSS
-           ============================================================================ */
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #64748b;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --bg-color: #ffffff;
-            --text-color: #1f2937;
-            --border-color: #e5e7eb;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --primary: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e5e7eb;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-        }
-
-        .app {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: var(--shadow-lg);
-            z-index: 100;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .main {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 0.5rem;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .nav-tab {
-            padding: 1rem 1.5rem;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            color: var(--secondary-color);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .nav-tab.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-
-        .nav-tab:hover {
-            color: var(--primary-color);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .card {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
-        }
-
-        .card h3 {
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select {
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #1d4ed8;
-        }
-
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #059669;
-        }
-
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background-color: #d97706;
-        }
-
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #dc2626;
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .info-box {
-            background: var(--border-color);
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .info-box p {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .info-box strong {
-            color: var(--secondary-color);
-        }
-
-        .student-item {
-            background: var(--border-color);
-            padding: 1rem;
-            border-radius: 6px;
-            border-left: 4px solid var(--primary-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .status.success {
-            background-color: rgba(16, 185, 129, 0.2);
-            color: var(--success-color);
-        }
-
-        .status.warning {
-            background-color: rgba(245, 158, 11, 0.2);
-            color: var(--warning-color);
-        }
-
-        .status.danger {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: var(--danger-color);
-        }
-
-        .notification {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 6px;
-            box-shadow: var(--shadow-lg);
-            display: none;
-            z-index: 1000;
-        }
-
-        .notification.show {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .notification.success {
-            background: var(--success-color);
-        }
-
-        .notification.error {
-            background: var(--danger-color);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--secondary-color);
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 1.5rem 0;
-        }
-
-        @media (max-width: 640px) {
-            .button-group {
-                grid-template-columns: 1fr;
-            }
-
-            .header {
-                padding: 1rem;
-            }
-
-            .nav-tab {
-                padding: 0.75rem;
-                font-size: 0.9rem;
-            }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .app { display: flex; flex-direction: column; height: 100vh; }
+        .header { background: var(--primary); color: white; padding: 1rem; flex-shrink: 0; }
+        .main { display: grid; grid-template-columns: 1fr 320px; gap: 0; flex: 1; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
+        .sidebar { display: flex; flex-direction: column; border-left: 1px solid var(--border); background: white; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        .sidebar-header { background: var(--primary); color: white; padding: 1rem; font-weight: 600; }
+        .sidebar-content { padding: 1rem; flex: 1; }
+        .info-box { background: var(--border); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+        .info-box strong { color: var(--primary); display: block; margin-bottom: 0.25rem; }
+        .btn { padding: 0.75rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 0.5rem; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .student-item { background: var(--border); padding: 0.75rem; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem; transition: 0.2s; border-left: 3px solid var(--primary); }
+        .student-item:hover { background: #d1d5db; }
+        .student-item.selected { background: var(--primary); color: white; }
+        .student-item .name { font-weight: 600; }
+        .student-item .info { font-size: 0.85rem; margin-top: 0.25rem; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .stat-val { font-weight: 600; color: var(--primary); }
+        .notification { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1rem 1.5rem; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; animation: slideIn 0.3s; }
+        .notification.success { background: var(--success); }
+        .notification.warning { background: var(--warning); }
+        .notification.error { background: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-box { background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; }
+        .modal-box h2 { color: var(--primary); margin-bottom: 1rem; }
+        @media (max-width: 768px) {
+            .main { grid-template-columns: 1fr; }
+            .sidebar { position: fixed; right: -320px; top: 60px; width: 320px; height: calc(100vh - 60px); transition: right 0.3s; z-index: 99; }
+            .sidebar.open { right: 0; }
         }
     </style>
 </head>
 <body>
-    <div id="app" class="app">
-        <!-- Header -->
+    <div class="app">
         <header class="header">
-            <h1 class="logo">🚌 SmartBus Route</h1>
-            <span id="mode-label" style="font-weight: 600;">Driver Mode</span>
+            <h1>🚌 SmartBus Navigator v2 - Full Maps & Navigation</h1>
         </header>
-
-        <!-- Main Content -->
-        <main class="main">
-            <div class="container">
-                <!-- Role Switcher -->
-                <div class="card">
-                    <h3>Select Mode</h3>
-                    <div class="form-group">
-                        <label for="role-select">Role:</label>
-                        <select id="role-select">
-                            <option value="driver">Driver</option>
-                            <option value="admin">Administrator</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Driver Interface -->
-                <div id="driver-section">
-                    <nav class="nav-tabs">
-                        <button class="nav-tab active" data-tab="route">🗺️ Route</button>
-                        <button class="nav-tab" data-tab="students">👥 Students</button>
-                        <button class="nav-tab" data-tab="transactions">📋 Transactions</button>
-                        <button class="nav-tab" data-tab="settings">⚙️ Settings</button>
-                    </nav>
-
-                    <!-- Route Tab -->
-                    <div id="route-tab" class="tab-content active">
-                        <div class="card">
-                            <h3>Current Route</h3>
-                            <div class="info-box">
-                                <p><strong>Route:</strong> <span id="route-name">Route 1 - Downtown</span></p>
-                                <p><strong>Distance:</strong> <span id="route-distance">24.5 km</span></p>
-                                <p><strong>Terrain Cost:</strong> <span id="route-cost">45.23</span></p>
-                                <p><strong>Total Students:</strong> <span id="student-count">21</span></p>
-                                <p><strong>Status:</strong> <span id="route-status" class="status success">Active</span></p>
-                            </div>
-                            <button id="start-route-btn" class="btn btn-primary">Start Route</button>
-                            <button id="end-route-btn" class="btn btn-danger" style="display:none;">End Route</button>
+        <div class="main">
+            <div id="map"></div>
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">🗺️ Route Navigation</div>
+                <div class="sidebar-content">
+                    <div class="info-box">
+                        <strong>Route: Downtown Express</strong>
+                        <div style="margin-top: 0.5rem;">
+                            📍 Distance: 24.5 km<br>
+                            🎯 Next: Ahmed Hassan<br>
+                            ⏱️ ETA: 5 mins<br>
+                            <span id="route-status" style="display: inline-block; margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #d1fae5; color: #065f46; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">● Active</span>
                         </div>
                     </div>
-
-                    <!-- Students Tab -->
-                    <div id="students-tab" class="tab-content">
-                        <div class="card">
-                            <h3>All Route Students</h3>
-                            <div id="students-list"></div>
-                        </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="start-btn">▶ Start</button>
+                        <button class="btn btn-danger" id="end-btn" style="display:none;">⏹ End</button>
                     </div>
-
-                    <!-- Transactions Tab -->
-                    <div id="transactions-tab" class="tab-content">
-                        <div class="card">
-                            <h3>Log Transaction</h3>
-                            <div class="form-group">
-                                <label for="student-select">Select Student:</label>
-                                <select id="student-select"></select>
-                            </div>
-                            <div class="button-group">
-                                <button class="btn btn-success" data-type="BOARDED">✓ Boarded</button>
-                                <button class="btn btn-warning" data-type="NO_SHOW">✗ No Show</button>
-                                <button class="btn btn-danger" data-type="SKIPPED">⊘ Skipped</button>
-                            </div>
-                            <hr>
-                            <h4>Pending Transactions</h4>
-                            <div id="pending-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Settings Tab -->
-                    <div id="settings-tab" class="tab-content">
-                        <div class="card">
-                            <h3>Driver Settings</h3>
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="gps-enabled" checked> GPS Tracking Enabled
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="offline-mode" checked> Offline Mode
-                                </label>
-                            </div>
-                            <hr>
-                            <h4>Sync Status</h4>
-                            <div class="info-box">
-                                <p>📡 Status: <span id="connection-status">Online</span></p>
-                                <p>⏳ Pending: <span id="pending-count">0</span></p>
-                                <p>✓ Synced: <span id="synced-count">0</span></p>
-                            </div>
-                            <button id="manual-sync-btn" class="btn btn-primary">Manual Sync</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Admin Interface -->
-                <div id="admin-section" style="display:none;">
-                    <nav class="nav-tabs">
-                        <button class="nav-tab active" data-tab="routes">🗺️ Routes</button>
-                        <button class="nav-tab" data-tab="admin-students">👥 Students</button>
-                        <button class="nav-tab" data-tab="analytics">📊 Analytics</button>
-                    </nav>
-
-                    <!-- Routes Tab -->
-                    <div id="routes-tab" class="tab-content active">
-                        <div class="card">
-                            <h3>Routes</h3>
-                            <div id="routes-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Students Tab -->
-                    <div id="admin-students-tab" class="tab-content">
-                        <div class="card">
-                            <h3>Manage Students</h3>
-                            <div class="form-group">
-                                <input type="text" id="search-students" placeholder="Search...">
-                            </div>
-                            <div id="admin-students-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Analytics Tab -->
-                    <div id="analytics-tab" class="tab-content">
-                        <div class="card">
-                            <h3>Analytics</h3>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                                <div style="background: var(--border-color); padding: 1rem; border-radius: 6px; text-align: center;">
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary-color);" id="total-routes">3</div>
-                                    <div>Total Routes</div>
-                                </div>
-                                <div style="background: var(--border-color); padding: 1rem; border-radius: 6px; text-align: center;">
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--success-color);" id="total-students">21</div>
-                                    <div>Students</div>
-                                </div>
-                                <div style="background: var(--border-color); padding: 1rem; border-radius: 6px; text-align: center;">
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--warning-color);" id="avg-cost">48.6</div>
-                                    <div>Avg Cost</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button class="btn btn-primary" id="nav-btn">🧭 Navigate</button>
+                    <button class="btn btn-primary" id="sync-btn">🔄 Sync</button>
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border);">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">👥 Students (5)</div>
+                    <div id="students-list"></div>
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border);">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Stats</div>
+                    <div class="stat-row"><span>Boarded:</span> <span class="stat-val" id="stat-boarded">0</span></div>
+                    <div class="stat-row"><span>Pending:</span> <span class="stat-val" id="stat-pending">5</span></div>
+                    <div class="stat-row"><span>No Show:</span> <span class="stat-val" id="stat-noshow">0</span></div>
+                    <div class="stat-row"><span>GPS:</span> <span class="stat-val" id="gps-status">🟢 Active</span></div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
-
-    <!-- Notification -->
-    <div id="notification" class="notification"></div>
-
-    <!-- All-in-One JavaScript -->
+    <div id="notification" class="notification" style="display:none;"></div>
+    <div id="modal" class="modal">
+        <div class="modal-box">
+            <h2 id="modal-name">Student Name</h2>
+            <div style="text-align: center; font-size: 3rem; margin: 1rem 0;">👤</div>
+            <button class="btn btn-success" id="modal-boarded">✓ Boarded</button>
+            <button class="btn btn-warning" id="modal-noshow">✗ No Show</button>
+            <button class="btn btn-danger" id="modal-skip">⊘ Skipped</button>
+            <button class="btn" style="background: var(--border); color: black;" id="modal-close">Cancel</button>
+        </div>
+    </div>
     <script>
-        // Configuration
         const CONFIG = {
-            API_BASE_URL: 'http://localhost:3000/api',
-            DEMO_ROUTES: [
-                { id: 'r1', name: 'Route 1 - Downtown', distance: 24.5, cost: 45.23, students: 21, status: 'active' },
-                { id: 'r2', name: 'Route 2 - Suburbs', distance: 18.3, cost: 32.15, students: 18, status: 'inactive' },
-                { id: 'r3', name: 'Route 3 - Rural', distance: 35.7, cost: 68.42, students: 24, status: 'inactive' },
+            ROUTES: [
+                { id: 'r1', name: 'Downtown Express', lat: -1.2921, lng: 36.8219, dist: 24.5 }
             ],
-            DEMO_STUDENTS: [
-                { id: 's1', name: 'Ahmed Hassan', location: 'Nairobi CBD', status: 'PAID', route: 'r1' },
-                { id: 's2', name: 'Maria Omondi', location: 'Karen', status: 'PENDING', route: 'r1' },
-                { id: 's3', name: 'John Kipchoge', location: 'Westlands', status: 'PAID', route: 'r2' },
-                { id: 's4', name: 'Grace Mueni', location: 'Rongai', status: 'OVERDUE', route: 'r2' },
-                { id: 's5', name: 'David Kiplagat', location: 'Kiambu', status: 'PAID', route: 'r3' },
-            ],
+            STUDENTS: [
+                { id: 's1', name: 'Ahmed Hassan', lat: -1.2880, lng: 36.8140, addr: 'CBD' },
+                { id: 's2', name: 'Maria Omondi', lat: -1.2950, lng: 36.8250, addr: 'Karen' },
+                { id: 's3', name: 'John Kipchoge', lat: -1.2850, lng: 36.8300, addr: 'Westlands' },
+                { id: 's4', name: 'Grace Mueni', lat: -1.2900, lng: 36.8180, addr: 'Rongai' },
+                { id: 's5', name: 'David Kiplagat', lat: -1.2920, lng: 36.8270, addr: 'Kiambu' }
+            ]
         };
-
-        // State
-        let state = {
-            currentRole: 'driver',
-            currentRoute: CONFIG.DEMO_ROUTES[0],
-            transactions: [],
-            routeActive: false,
+        
+        let map, driverMarker, routeLine, studentMarkers = {}, state = {
+            active: false, selected: null, transactions: {}, userLat: -1.2921, userLng: 36.8219
         };
-
-        // Initialize
+        
         function init() {
-            setupEventListeners();
-            renderDriverInterface();
-            updateConnectionStatus();
-        }
-
-        function setupEventListeners() {
-            // Role switcher
-            document.getElementById('role-select').addEventListener('change', (e) => {
-                state.currentRole = e.target.value;
-                switchRole();
-            });
-
-            // Driver tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    const tabName = e.target.dataset.tab;
-                    switchTab(tabName);
-                });
-            });
-
-            // Route buttons
-            document.getElementById('start-route-btn').addEventListener('click', startRoute);
-            document.getElementById('end-route-btn').addEventListener('click', endRoute);
-
-            // Transaction buttons
-            document.querySelectorAll('[data-type]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const type = e.target.dataset.type;
-                    recordTransaction(type);
-                });
-            });
-
-            // Student select
-            document.getElementById('student-select').addEventListener('change', () => {
-                renderPendingTransactions();
-            });
-
-            // Search
-            document.getElementById('search-students').addEventListener('input', (e) => {
-                filterStudents(e.target.value);
-            });
-
-            // Sync button
-            document.getElementById('manual-sync-btn').addEventListener('click', manualSync);
-
-            // Network events
-            window.addEventListener('online', () => updateConnectionStatus());
-            window.addEventListener('offline', () => updateConnectionStatus());
-        }
-
-        function switchRole() {
-            if (state.currentRole === 'driver') {
-                document.getElementById('driver-section').style.display = 'block';
-                document.getElementById('admin-section').style.display = 'none';
-                document.getElementById('mode-label').textContent = 'Driver Mode';
-            } else {
-                document.getElementById('driver-section').style.display = 'none';
-                document.getElementById('admin-section').style.display = 'block';
-                document.getElementById('mode-label').textContent = 'Admin Mode';
-                renderAdminInterface();
-            }
-        }
-
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-
-            // Render content
-            if (tabName === 'students') renderStudents();
-            if (tabName === 'transactions') renderPendingTransactions();
-        }
-
-        function renderDriverInterface() {
-            // Populate route info
-            document.getElementById('route-name').textContent = state.currentRoute.name;
-            document.getElementById('route-distance').textContent = state.currentRoute.distance + ' km';
-            document.getElementById('route-cost').textContent = state.currentRoute.cost;
-            document.getElementById('student-count').textContent = state.currentRoute.students;
-
-            // Populate student select
-            const students = CONFIG.DEMO_STUDENTS.filter(s => s.route === state.currentRoute.id);
-            const select = document.getElementById('student-select');
-            select.innerHTML = '<option value="">Select student</option>';
-            students.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = s.name;
-                select.appendChild(option);
-            });
-
+            initMap();
+            setupUI();
             renderStudents();
+            simulateGPS();
         }
-
-        function renderStudents() {
-            const students = CONFIG.DEMO_STUDENTS.filter(s => s.route === state.currentRoute.id);
-            const container = document.getElementById('students-list');
+        
+        function initMap() {
+            map = L.map('map').setView([CONFIG.ROUTES[0].lat, CONFIG.ROUTES[0].lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
             
-            if (students.length === 0) {
-                container.innerHTML = '<div class="empty-state">No students</div>';
-                return;
-            }
-
-            container.innerHTML = students.map(s => `
-                <div class="student-item">
-                    <div>
-                        <div><strong>${s.name}</strong></div>
-                        <div style="font-size: 0.9rem; color: var(--secondary-color);">📍 ${s.location}</div>
-                    </div>
-                    <span class="status ${s.status === 'PAID' ? 'success' : 'warning'}">${s.status}</span>
-                </div>
-            `).join('');
-        }
-
-        function recordTransaction(type) {
-            const studentId = document.getElementById('student-select').value;
-            if (!studentId) {
-                showNotification('Please select a student', 'error');
-                return;
-            }
-
-            const student = CONFIG.DEMO_STUDENTS.find(s => s.id === studentId);
-            state.transactions.push({
-                id: Date.now(),
-                student: student.name,
-                type: type,
-                timestamp: new Date().toLocaleString(),
-                synced: navigator.onLine,
+            driverMarker = L.circleMarker([state.userLat, state.userLng], {
+                radius: 8, color: '#2563eb', fill: true, fillOpacity: 0.8
+            }).addTo(map).bindPopup('Your Location');
+            
+            const path = [CONFIG.ROUTES[0], ...CONFIG.STUDENTS].map(p => [p.lat, p.lng]);
+            routeLine = L.polyline(path, { color: '#2563eb', weight: 3, opacity: 0.7 }).addTo(map);
+            
+            CONFIG.STUDENTS.forEach(s => {
+                const m = L.marker([s.lat, s.lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0iI2VmNDQ0NiIvPjwvc3ZnPg==',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(map);
+                m.on('click', () => selectStudent(s.id));
+                studentMarkers[s.id] = m;
             });
-
-            showNotification(`✓ ${type}: ${student.name}`, 'success');
-            renderPendingTransactions();
         }
-
-        function renderPendingTransactions() {
-            const pending = state.transactions;
-            const container = document.getElementById('pending-list');
-
-            if (pending.length === 0) {
-                container.innerHTML = '<div class="empty-state">No pending transactions</div>';
-                return;
-            }
-
-            container.innerHTML = pending.map(t => `
-                <div class="student-item">
-                    <div>
-                        <div><strong>${t.type}</strong></div>
-                        <div style="font-size: 0.9rem; color: var(--secondary-color);">${t.student}</div>
-                        <div style="font-size: 0.85rem; color: var(--secondary-color);">${t.timestamp}</div>
-                    </div>
-                    <span class="status ${t.synced ? 'success' : 'warning'}">${t.synced ? 'Synced' : 'Pending'}</span>
+        
+        function setupUI() {
+            document.getElementById('start-btn').onclick = startRoute;
+            document.getElementById('end-btn').onclick = endRoute;
+            document.getElementById('nav-btn').onclick = () => {
+                if (!state.selected) { notify('Select student', 'warning'); return; }
+                const s = CONFIG.STUDENTS.find(x => x.id === state.selected);
+                map.panTo([s.lat, s.lng]); map.setZoom(16);
+                notify('Navigating...', 'info');
+            };
+            document.getElementById('sync-btn').onclick = () => {
+                const pending = Object.keys(state.transactions).length;
+                notify(\Synced \ transactions\, 'success');
+            };
+            document.getElementById('modal-boarded').onclick = () => record('BOARDED');
+            document.getElementById('modal-noshow').onclick = () => record('NO_SHOW');
+            document.getElementById('modal-skip').onclick = () => record('SKIPPED');
+            document.getElementById('modal-close').onclick = () => closeModal();
+        }
+        
+        function renderStudents() {
+            document.getElementById('students-list').innerHTML = CONFIG.STUDENTS.map(s => \
+                <div class="student-item" onclick="selectStudent('\')" data-id="\">
+                    <div class="name">\</div>
+                    <div class="info">📍 \ | \</div>
                 </div>
-            `).join('');
-
-            // Update counts
-            const synced = pending.filter(t => t.synced).length;
-            const unsyncedCount = pending.filter(t => !t.synced).length;
-            document.getElementById('synced-count').textContent = synced;
-            document.getElementById('pending-count').textContent = unsyncedCount;
+            \).join('');
         }
-
+        
+        function selectStudent(id) {
+            state.selected = id;
+            document.querySelectorAll('.student-item').forEach(x => x.classList.remove('selected'));
+            document.querySelector(\[data-id="\"]\).classList.add('selected');
+            document.getElementById('modal-name').textContent = CONFIG.STUDENTS.find(x => x.id === id).name;
+            openModal();
+        }
+        
+        function record(type) {
+            state.transactions[state.selected] = type;
+            renderStudents();
+            updateStats();
+            const name = CONFIG.STUDENTS.find(x => x.id === state.selected).name;
+            notify(\✓ \: \\, 'success');
+            closeModal();
+        }
+        
         function startRoute() {
-            state.routeActive = true;
-            document.getElementById('start-route-btn').style.display = 'none';
-            document.getElementById('end-route-btn').style.display = 'inline-block';
-            document.getElementById('route-status').textContent = 'Active';
-            showNotification(`Route ${state.currentRoute.name} started`, 'success');
+            state.active = true;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('end-btn').style.display = 'block';
+            notify('Route started!', 'success');
         }
-
+        
         function endRoute() {
-            state.routeActive = false;
-            document.getElementById('start-route-btn').style.display = 'inline-block';
-            document.getElementById('end-route-btn').style.display = 'none';
-            document.getElementById('route-status').textContent = 'Inactive';
-            manualSync();
+            state.active = false;
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('end-btn').style.display = 'none';
+            notify('Route ended', 'info');
         }
-
-        function manualSync() {
-            const pending = state.transactions.filter(t => !t.synced);
-            if (pending.length === 0) {
-                showNotification('No transactions to sync', 'error');
-                return;
-            }
-
-            // Simulate sync
-            state.transactions.forEach(t => t.synced = true);
-            renderPendingTransactions();
-            showNotification(`✓ Synced ${pending.length} transactions`, 'success');
+        
+        function simulateGPS() {
+            setInterval(() => {
+                if (!state.active) return;
+                state.userLat += (Math.random() - 0.5) * 0.0005;
+                state.userLng += (Math.random() - 0.5) * 0.0005;
+                driverMarker.setLatLng([state.userLat, state.userLng]);
+            }, 5000);
         }
-
-        function renderAdminInterface() {
-            // Routes
-            const routesHtml = CONFIG.DEMO_ROUTES.map(r => `
-                <div class="student-item">
-                    <div>
-                        <div><strong>${r.name}</strong></div>
-                        <div style="font-size: 0.9rem; color: var(--secondary-color);">Distance: ${r.distance} km | Students: ${r.students}</div>
-                    </div>
-                    <span class="status warning">Cost: ${r.cost}</span>
-                </div>
-            `).join('');
-            document.getElementById('routes-list').innerHTML = routesHtml;
-
-            // Students
-            const studentsHtml = CONFIG.DEMO_STUDENTS.map(s => `
-                <div class="student-item">
-                    <div>
-                        <div><strong>${s.name}</strong></div>
-                        <div style="font-size: 0.9rem; color: var(--secondary-color);">📍 ${s.location}</div>
-                    </div>
-                    <span class="status ${s.status === 'PAID' ? 'success' : 'warning'}">${s.status}</span>
-                </div>
-            `).join('');
-            document.getElementById('admin-students-list').innerHTML = studentsHtml;
+        
+        function updateStats() {
+            const boarded = Object.values(state.transactions).filter(t => t === 'BOARDED').length;
+            const pending = CONFIG.STUDENTS.length - Object.keys(state.transactions).length;
+            const noshow = Object.values(state.transactions).filter(t => t === 'NO_SHOW').length;
+            document.getElementById('stat-boarded').textContent = boarded;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-noshow').textContent = noshow;
         }
-
-        function filterStudents(query) {
-            const filtered = CONFIG.DEMO_STUDENTS.filter(s =>
-                s.name.toLowerCase().includes(query.toLowerCase()) ||
-                s.location.toLowerCase().includes(query.toLowerCase())
-            );
-            const studentsHtml = filtered.map(s => `
-                <div class="student-item">
-                    <div>
-                        <div><strong>${s.name}</strong></div>
-                        <div style="font-size: 0.9rem; color: var(--secondary-color);">📍 ${s.location}</div>
-                    </div>
-                    <span class="status ${s.status === 'PAID' ? 'success' : 'warning'}">${s.status}</span>
-                </div>
-            `).join('');
-            document.getElementById('admin-students-list').innerHTML = studentsHtml;
+        
+        function openModal() { document.getElementById('modal').classList.add('show'); }
+        function closeModal() { document.getElementById('modal').classList.remove('show'); }
+        function notify(msg, type = 'info') {
+            const n = document.getElementById('notification');
+            n.textContent = msg;
+            n.className = 'notification ' + type;
+            n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 3000);
         }
-
-        function updateConnectionStatus() {
-            const status = navigator.onLine ? 'Online' : 'Offline';
-            document.getElementById('connection-status').textContent = status;
-        }
-
-        function showNotification(message, type = 'info') {
-            const notif = document.getElementById('notification');
-            notif.textContent = message;
-            notif.className = 'notification show ' + type;
-            setTimeout(() => notif.classList.remove('show'), 4000);
-        }
-
-        // Start app
-        init();
+        
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
