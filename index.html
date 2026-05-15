@@ -1,0 +1,247 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBus Route - Maps & Navigation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .app { display: flex; flex-direction: column; height: 100vh; }
+        .header { background: var(--primary); color: white; padding: 1rem; flex-shrink: 0; }
+        .main { display: grid; grid-template-columns: 1fr 320px; gap: 0; flex: 1; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
+        .sidebar { display: flex; flex-direction: column; border-left: 1px solid var(--border); background: white; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        .sidebar-header { background: var(--primary); color: white; padding: 1rem; font-weight: 600; }
+        .sidebar-content { padding: 1rem; flex: 1; }
+        .info-box { background: var(--border); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+        .info-box strong { color: var(--primary); display: block; margin-bottom: 0.25rem; }
+        .btn { padding: 0.75rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 0.5rem; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .student-item { background: var(--border); padding: 0.75rem; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem; transition: 0.2s; border-left: 3px solid var(--primary); }
+        .student-item:hover { background: #d1d5db; }
+        .student-item.selected { background: var(--primary); color: white; }
+        .student-item .name { font-weight: 600; }
+        .student-item .info { font-size: 0.85rem; margin-top: 0.25rem; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .stat-val { font-weight: 600; color: var(--primary); }
+        .notification { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1rem 1.5rem; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; animation: slideIn 0.3s; }
+        .notification.success { background: var(--success); }
+        .notification.warning { background: var(--warning); }
+        .notification.error { background: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-box { background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; }
+        .modal-box h2 { color: var(--primary); margin-bottom: 1rem; }
+        @media (max-width: 768px) {
+            .main { grid-template-columns: 1fr; }
+            .sidebar { position: fixed; right: -320px; top: 60px; width: 320px; height: calc(100vh - 60px); transition: right 0.3s; z-index: 99; }
+            .sidebar.open { right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>🚌 SmartBus Navigator v2 - Full Maps & Navigation</h1>
+        </header>
+        <div class="main">
+            <div id="map"></div>
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">🗺️ Route Navigation</div>
+                <div class="sidebar-content">
+                    <div class="info-box">
+                        <strong>Route: Downtown Express</strong>
+                        <div style="margin-top: 0.5rem;">
+                            📍 Distance: 24.5 km<br>
+                            🎯 Next: Ahmed Hassan<br>
+                            ⏱️ ETA: 5 mins<br>
+                            <span id="route-status" style="display: inline-block; margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #d1fae5; color: #065f46; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">● Active</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="start-btn">▶ Start</button>
+                        <button class="btn btn-danger" id="end-btn" style="display:none;">⏹ End</button>
+                    </div>
+                    <button class="btn btn-primary" id="nav-btn">🧭 Navigate</button>
+                    <button class="btn btn-primary" id="sync-btn">🔄 Sync</button>
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border);">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">👥 Students (5)</div>
+                    <div id="students-list"></div>
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border);">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Stats</div>
+                    <div class="stat-row"><span>Boarded:</span> <span class="stat-val" id="stat-boarded">0</span></div>
+                    <div class="stat-row"><span>Pending:</span> <span class="stat-val" id="stat-pending">5</span></div>
+                    <div class="stat-row"><span>No Show:</span> <span class="stat-val" id="stat-noshow">0</span></div>
+                    <div class="stat-row"><span>GPS:</span> <span class="stat-val" id="gps-status">🟢 Active</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="notification" class="notification" style="display:none;"></div>
+    <div id="modal" class="modal">
+        <div class="modal-box">
+            <h2 id="modal-name">Student Name</h2>
+            <div style="text-align: center; font-size: 3rem; margin: 1rem 0;">👤</div>
+            <button class="btn btn-success" id="modal-boarded">✓ Boarded</button>
+            <button class="btn btn-warning" id="modal-noshow">✗ No Show</button>
+            <button class="btn btn-danger" id="modal-skip">⊘ Skipped</button>
+            <button class="btn" style="background: var(--border); color: black;" id="modal-close">Cancel</button>
+        </div>
+    </div>
+    <script>
+        const CONFIG = {
+            ROUTES: [
+                { id: 'r1', name: 'Downtown Express', lat: -1.2921, lng: 36.8219, dist: 24.5 }
+            ],
+            STUDENTS: [
+                { id: 's1', name: 'Ahmed Hassan', lat: -1.2880, lng: 36.8140, addr: 'CBD' },
+                { id: 's2', name: 'Maria Omondi', lat: -1.2950, lng: 36.8250, addr: 'Karen' },
+                { id: 's3', name: 'John Kipchoge', lat: -1.2850, lng: 36.8300, addr: 'Westlands' },
+                { id: 's4', name: 'Grace Mueni', lat: -1.2900, lng: 36.8180, addr: 'Rongai' },
+                { id: 's5', name: 'David Kiplagat', lat: -1.2920, lng: 36.8270, addr: 'Kiambu' }
+            ]
+        };
+        
+        let map, driverMarker, routeLine, studentMarkers = {}, state = {
+            active: false, selected: null, transactions: {}, userLat: -1.2921, userLng: 36.8219
+        };
+        
+        function init() {
+            initMap();
+            setupUI();
+            renderStudents();
+            simulateGPS();
+        }
+        
+        function initMap() {
+            map = L.map('map').setView([CONFIG.ROUTES[0].lat, CONFIG.ROUTES[0].lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            driverMarker = L.circleMarker([state.userLat, state.userLng], {
+                radius: 8, color: '#2563eb', fill: true, fillOpacity: 0.8
+            }).addTo(map).bindPopup('Your Location');
+            
+            const path = [CONFIG.ROUTES[0], ...CONFIG.STUDENTS].map(p => [p.lat, p.lng]);
+            routeLine = L.polyline(path, { color: '#2563eb', weight: 3, opacity: 0.7 }).addTo(map);
+            
+            CONFIG.STUDENTS.forEach(s => {
+                const m = L.marker([s.lat, s.lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0iI2VmNDQ0NiIvPjwvc3ZnPg==',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(map);
+                m.on('click', () => selectStudent(s.id));
+                studentMarkers[s.id] = m;
+            });
+        }
+        
+        function setupUI() {
+            document.getElementById('start-btn').onclick = startRoute;
+            document.getElementById('end-btn').onclick = endRoute;
+            document.getElementById('nav-btn').onclick = () => {
+                if (!state.selected) { notify('Select student', 'warning'); return; }
+                const s = CONFIG.STUDENTS.find(x => x.id === state.selected);
+                map.panTo([s.lat, s.lng]); map.setZoom(16);
+                notify('Navigating...', 'info');
+            };
+            document.getElementById('sync-btn').onclick = () => {
+                const pending = Object.keys(state.transactions).length;
+                notify(\Synced \ transactions\, 'success');
+            };
+            document.getElementById('modal-boarded').onclick = () => record('BOARDED');
+            document.getElementById('modal-noshow').onclick = () => record('NO_SHOW');
+            document.getElementById('modal-skip').onclick = () => record('SKIPPED');
+            document.getElementById('modal-close').onclick = () => closeModal();
+        }
+        
+        function renderStudents() {
+            document.getElementById('students-list').innerHTML = CONFIG.STUDENTS.map(s => \
+                <div class="student-item" onclick="selectStudent('\')" data-id="\">
+                    <div class="name">\</div>
+                    <div class="info">📍 \ | \</div>
+                </div>
+            \).join('');
+        }
+        
+        function selectStudent(id) {
+            state.selected = id;
+            document.querySelectorAll('.student-item').forEach(x => x.classList.remove('selected'));
+            document.querySelector(\[data-id="\"]\).classList.add('selected');
+            document.getElementById('modal-name').textContent = CONFIG.STUDENTS.find(x => x.id === id).name;
+            openModal();
+        }
+        
+        function record(type) {
+            state.transactions[state.selected] = type;
+            renderStudents();
+            updateStats();
+            const name = CONFIG.STUDENTS.find(x => x.id === state.selected).name;
+            notify(\✓ \: \\, 'success');
+            closeModal();
+        }
+        
+        function startRoute() {
+            state.active = true;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('end-btn').style.display = 'block';
+            notify('Route started!', 'success');
+        }
+        
+        function endRoute() {
+            state.active = false;
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('end-btn').style.display = 'none';
+            notify('Route ended', 'info');
+        }
+        
+        function simulateGPS() {
+            setInterval(() => {
+                if (!state.active) return;
+                state.userLat += (Math.random() - 0.5) * 0.0005;
+                state.userLng += (Math.random() - 0.5) * 0.0005;
+                driverMarker.setLatLng([state.userLat, state.userLng]);
+            }, 5000);
+        }
+        
+        function updateStats() {
+            const boarded = Object.values(state.transactions).filter(t => t === 'BOARDED').length;
+            const pending = CONFIG.STUDENTS.length - Object.keys(state.transactions).length;
+            const noshow = Object.values(state.transactions).filter(t => t === 'NO_SHOW').length;
+            document.getElementById('stat-boarded').textContent = boarded;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-noshow').textContent = noshow;
+        }
+        
+        function openModal() { document.getElementById('modal').classList.add('show'); }
+        function closeModal() { document.getElementById('modal').classList.remove('show'); }
+        function notify(msg, type = 'info') {
+            const n = document.getElementById('notification');
+            n.textContent = msg;
+            n.className = 'notification ' + type;
+            n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 3000);
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
