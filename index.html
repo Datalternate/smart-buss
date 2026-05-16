@@ -503,10 +503,11 @@
                 maxZoom: 19
             }).addTo(state.map);
             
-            // Driver marker
+            // Driver marker - School bus
             const driverIcon = L.divIcon({
-                html: '<div style="background: #2563eb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>',
-                iconSize: [26, 26],
+                html: '<div style="font-size: 32px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); transform: rotate(-45deg);">🚌</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
                 className: 'driver-marker'
             });
             
@@ -628,15 +629,50 @@
             updateGPSStatus(false);
         }
         
+        // Animate movement to a location
+        async function animateToLocation(targetLat, targetLng, durationMs = 5000) {
+            const startPos = state.driverMarker.getLatLng();
+            const startLat = startPos.lat;
+            const startLng = startPos.lng;
+            
+            const startTime = Date.now();
+            
+            return new Promise(resolve => {
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / durationMs, 1);
+                    
+                    // Linear interpolation
+                    const lat = startLat + (targetLat - startLat) * progress;
+                    const lng = startLng + (targetLng - startLng) * progress;
+                    
+                    state.driverMarker.setLatLng([lat, lng]);
+                    state.map.setView([lat, lng], 16);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                };
+                
+                animate();
+            });
+        }
+        
         // Navigate to selected
-        function navigateToSelected() {
+        async function navigateToSelected() {
             if (!state.selected) {
                 showNotification('Select a student first', 'warning');
                 return;
             }
+            
             const student = CONFIG.STUDENTS.find(s => s.id === state.selected);
-            state.map.setView([student.lat, student.lng], 17);
-            showNotification(`Navigating to ${student.name}...`, 'info');
+            showNotification(`🚗 Moving to ${student.name}...`, 'info');
+            
+            await animateToLocation(student.lat, student.lng, 6000);
+            
+            showNotification(`✓ Arrived at ${student.name}!`, 'success');
         }
         
         // Save data (export transactions)
