@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBus - Maps & Navigation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        
+        body {
+            background: #fff;
+            color: #1f2937;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e5e7eb;
+            background: white;
+            overflow: hidden;
+            box-shadow: -2px 0 4px rgba(0,0,0,0.05);
+        }
+        
+        .sidebar-header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .card {
+            background: #f3f4f6;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .card strong {
+            color: #2563eb;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card div {
+            margin: 0.25rem 0;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-group .btn {
+            margin: 0;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .student-item {
+            background: #e5e7eb;
+            padding: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            border-left: 3px solid #2563eb;
+            transition: 0.2s;
+        }
+        
+        .student-item:hover {
+            background: #d1d5db;
+        }
+        
+        .student-item.selected {
+            background: #2563eb;
+            color: white;
+            border-left-color: #1d4ed8;
+        }
+        
+        .student-item .name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .student-item .info {
+            font-size: 0.85rem;
+        }
+        
+        .stats {
+            display: grid;
+            gap: 0.5rem;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+        
+        .stat-val {
+            font-weight: 600;
+            color: #2563eb;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: #2563eb;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification.show {
+            display: block;
+        }
+        
+        .notification.success {
+            background: #10b981;
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        .notification.warning {
+            background: #f59e0b;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .modal-content h2 {
+            color: #2563eb;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-emoji {
+            font-size: 3rem;
+            display: block;
+            margin: 1rem 0;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 1rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: fixed;
+                right: -350px;
+                top: 60px;
+                width: 350px;
+                height: calc(100vh - 60px);
+                transition: right 0.3s ease;
+                border-left: none;
+                border-top: 1px solid #e5e7eb;
+                z-index: 99;
+            }
+            
+            .sidebar.open {
+                right: 0;
+            }
+            
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 1.1rem;
+            }
+            
+            .menu-btn {
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚌 SmartBus Route Navigator</h1>
+        </div>
+        
+        <div class="content">
+            <div id="map"></div>
+            
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    🗺️ Route Control
+                </div>
+                
+                <div class="sidebar-scroll">
+                    <div class="card">
+                        <strong>📍 Downtown Express</strong>
+                        <div>Distance: 24.5 km</div>
+                        <div>Next: <span id="next-student">Ahmed Hassan</span></div>
+                        <div>ETA: ~5 mins</div>
+                        <div style="margin-top: 0.5rem;">
+                            <span id="route-status" style="display: inline-block; background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">● Inactive</span>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="start-btn">▶ Start</button>
+                        <button class="btn btn-danger" id="end-btn" style="display:none;">⏹ End</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="nav-btn">🧭 Navigate</button>
+                    <button class="btn btn-primary" id="sync-btn">🔄 Sync Data</button>
+                    
+                    <hr>
+                    
+                    <div style="font-weight: 600; margin-bottom: 0.75rem;">👥 Students (5)</div>
+                    <div class="student-list" id="students-list"></div>
+                    
+                    <hr>
+                    
+                    <div style="font-weight: 600; margin-bottom: 0.75rem;">📊 Stats</div>
+                    <div class="stats">
+                        <div class="stat"><span>Boarded:</span> <span class="stat-val" id="stat-boarded">0</span></div>
+                        <div class="stat"><span>Pending:</span> <span class="stat-val" id="stat-pending">5</span></div>
+                        <div class="stat"><span>No Show:</span> <span class="stat-val" id="stat-noshow">0</span></div>
+                        <div class="stat"><span>GPS:</span> <span class="stat-val" id="gps-status">🟢 On</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-name">Student Name</h2>
+            <span class="modal-emoji">👤</span>
+            <button class="btn btn-success" id="modal-boarded">✓ Boarded</button>
+            <button class="btn btn-warning" id="modal-noshow">✗ No Show</button>
+            <button class="btn btn-danger" id="modal-skip">⊘ Skipped</button>
+            <button class="btn" style="background: #e5e7eb; color: #1f2937;" id="modal-close">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            STUDENTS: [
+                { id: 's1', name: 'Ahmed Hassan', lat: -1.2880, lng: 36.8140, area: 'Nairobi CBD' },
+                { id: 's2', name: 'Maria Omondi', lat: -1.2950, lng: 36.8250, area: 'Karen' },
+                { id: 's3', name: 'John Kipchoge', lat: -1.2850, lng: 36.8300, area: 'Westlands' },
+                { id: 's4', name: 'Grace Mueni', lat: -1.2900, lng: 36.8180, area: 'Rongai' },
+                { id: 's5', name: 'David Kiplagat', lat: -1.2920, lng: 36.8270, area: 'Kiambu' }
+            ]
+        };
+        
+        // State
+        let state = {
+            map: null,
+            driverMarker: null,
+            studentMarkers: {},
+            routeLine: null,
+            active: false,
+            selected: null,
+            transactions: {},
+            gpsTracking: null
+        };
+        
+        // Initialize app
+        function initApp() {
+            initMap();
+            setupEvents();
+            renderStudents();
+            startGPSSimulation();
+        }
+        
+        // Initialize Leaflet map
+        function initMap() {
+            state.map = L.map('map').setView([-1.2921, 36.8219], 14);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(state.map);
+            
+            // Driver marker
+            const driverIcon = L.divIcon({
+                html: '<div style="background: #2563eb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>',
+                iconSize: [26, 26],
+                className: 'driver-marker'
+            });
+            
+            state.driverMarker = L.marker([-1.2921, 36.8219], { icon: driverIcon })
+                .addTo(state.map)
+                .bindPopup('Your Location');
+            
+            // Route polyline
+            const routePath = [[-1.2921, 36.8219], ...CONFIG.STUDENTS.map(s => [s.lat, s.lng])];
+            state.routeLine = L.polyline(routePath, {
+                color: '#2563eb',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '5, 5'
+            }).addTo(state.map);
+            
+            // Student markers
+            CONFIG.STUDENTS.forEach(student => {
+                const icon = L.divIcon({
+                    html: '<div style="background: #ef4444; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px;">📍</div>',
+                    iconSize: [30, 30],
+                    className: 'student-marker'
+                });
+                
+                const marker = L.marker([student.lat, student.lng], { icon: icon })
+                    .addTo(state.map)
+                    .bindPopup(`<strong>${student.name}</strong><br>${student.area}`);
+                
+                marker.on('click', () => {
+                    selectStudent(student.id);
+                });
+                
+                state.studentMarkers[student.id] = marker;
+            });
+            
+            // Fit map bounds
+            state.map.fitBounds(state.routeLine.getBounds(), { padding: [50, 50] });
+        }
+        
+        // Setup event listeners
+        function setupEvents() {
+            document.getElementById('start-btn').addEventListener('click', startRoute);
+            document.getElementById('end-btn').addEventListener('click', endRoute);
+            document.getElementById('nav-btn').addEventListener('click', navigateToSelected);
+            document.getElementById('sync-btn').addEventListener('click', syncData);
+            
+            document.getElementById('modal-boarded').addEventListener('click', () => recordTransaction('BOARDED'));
+            document.getElementById('modal-noshow').addEventListener('click', () => recordTransaction('NO_SHOW'));
+            document.getElementById('modal-skip').addEventListener('click', () => recordTransaction('SKIPPED'));
+            document.getElementById('modal-close').addEventListener('click', closeModal);
+        }
+        
+        // Render student list
+        function renderStudents() {
+            const list = document.getElementById('students-list');
+            list.innerHTML = CONFIG.STUDENTS.map(s => `
+                <div class="student-item" onclick="selectStudent('${s.id}')" data-id="${s.id}">
+                    <div class="name">${s.name}</div>
+                    <div class="info">📍 ${s.area} | ${state.transactions[s.id] || 'Pending'}</div>
+                </div>
+            `).join('');
+        }
+        
+        // Select student
+        function selectStudent(id) {
+            state.selected = id;
+            const student = CONFIG.STUDENTS.find(s => s.id === id);
+            
+            document.querySelectorAll('.student-item').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+            
+            document.getElementById('modal-name').textContent = student.name;
+            document.getElementById('next-student').textContent = student.name;
+            
+            // Zoom to student
+            state.map.setView([student.lat, student.lng], 16);
+            
+            openModal();
+        }
+        
+        // Record transaction
+        function recordTransaction(type) {
+            if (!state.selected) return;
+            
+            const student = CONFIG.STUDENTS.find(s => s.id === state.selected);
+            state.transactions[state.selected] = type;
+            
+            showNotification(`✓ ${type}: ${student.name}`, 'success');
+            renderStudents();
+            updateStats();
+            closeModal();
+        }
+        
+        // Start route
+        function startRoute() {
+            state.active = true;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('end-btn').style.display = 'block';
+            document.getElementById('route-status').textContent = '● Active';
+            document.getElementById('route-status').style.background = '#d1fae5';
+            showNotification('Route started! GPS tracking active.', 'success');
+        }
+        
+        // End route
+        function endRoute() {
+            state.active = false;
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('end-btn').style.display = 'none';
+            document.getElementById('route-status').textContent = '● Inactive';
+            document.getElementById('route-status').style.background = '#f3f4f6';
+            clearInterval(state.gpsTracking);
+            showNotification('Route ended.', 'info');
+        }
+        
+        // Navigate to selected
+        function navigateToSelected() {
+            if (!state.selected) {
+                showNotification('Select a student first', 'warning');
+                return;
+            }
+            const student = CONFIG.STUDENTS.find(s => s.id === state.selected);
+            state.map.setView([student.lat, student.lng], 17);
+            showNotification(`Navigating to ${student.name}...`, 'info');
+        }
+        
+        // Sync data
+        function syncData() {
+            const pending = Object.keys(state.transactions).length;
+            showNotification(`✓ Synced ${pending} transactions`, 'success');
+        }
+        
+        // Start GPS simulation
+        function startGPSSimulation() {
+            state.gpsTracking = setInterval(() => {
+                if (!state.active) return;
+                
+                // Simulate slight movement
+                const lat = state.driverMarker.getLatLng().lat + (Math.random() - 0.5) * 0.0003;
+                const lng = state.driverMarker.getLatLng().lng + (Math.random() - 0.5) * 0.0003;
+                
+                state.driverMarker.setLatLng([lat, lng]);
+            }, 3000);
+        }
+        
+        // Update stats
+        function updateStats() {
+            const boarded = Object.values(state.transactions).filter(t => t === 'BOARDED').length;
+            const noshow = Object.values(state.transactions).filter(t => t === 'NO_SHOW').length;
+            const pending = CONFIG.STUDENTS.length - Object.keys(state.transactions).length;
+            
+            document.getElementById('stat-boarded').textContent = boarded;
+            document.getElementById('stat-noshow').textContent = noshow;
+            document.getElementById('stat-pending').textContent = pending;
+        }
+        
+        // Modal functions
+        function openModal() {
+            document.getElementById('modal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+        
+        // Notification
+        function showNotification(msg, type = 'info') {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.className = 'notification show ' + type;
+            setTimeout(() => notif.classList.remove('show'), 3500);
+        }
+        
+        // Start when ready
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
